@@ -269,22 +269,72 @@ if submitted:
         'next': ['Visit the Registration Desk', 'Estimated wait: 10-15 min']
     })
 
-    next_steps = "".join(
-        f'<li style="margin-bottom:6px;">{step}</li>' for step in info['next']
-    )
+    st.markdown("---")
+    st.markdown("""
+<div style="font-size:22px;font-weight:700;color:#111827;margin-bottom:4px;">AI Recommendation</div>
+<div style="font-size:14px;color:#6b7280;margin-bottom:1.5rem;">Based on the information you provided</div>
+""", unsafe_allow_html=True)
 
-    st.markdown(f"""
+    res_col, prob_col = st.columns([3, 2])
+
+    with res_col:
+        steps_html = ''.join(
+            f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+            f'<span style="color:{info["color"]};font-size:14px;">📍</span>'
+            f'<span style="font-size:14px;color:#374151;">{step}</span></div>'
+            for step in info['next']
+        )
+        st.markdown(f"""
 <div style="background:{info['bg']};border:1.6px solid {info['border']};
-            border-radius:16px;padding:28px 32px;margin-top:8px;">
+            border-radius:16px;padding:28px 32px;">
     <div style="font-size:44px">{info['icon']}</div>
-    <div style="font-size:24px;font-weight:700;color:{info['color']};margin-top:4px;">{dept_name}</div>
-    <div style="font-size:14px;color:#4b5563;margin-top:6px;">{info['desc']}</div>
-    <div style="font-size:14px;font-weight:600;color:#111827;margin-top:16px;">
-        Confidence: {confidence:.1f}%
+    <div style="font-size:26px;font-weight:600;color:{info['color']};margin-bottom:8px;">{dept_name}</div>
+    <div style="font-size:14px;color:#374151;margin-bottom:20px;">
+        Our AI suggests you visit the <strong>{dept_name}</strong> Department.
     </div>
-    <div style="font-size:14px;font-weight:600;color:#111827;margin-top:16px;">Next steps</div>
-    <ul style="font-size:14px;color:#374151;margin-top:8px;padding-left:20px;">
-        {next_steps}
-    </ul>
+    <div style="font-size:11px;font-weight:600;color:{info['color']};text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Why?</div>
+    <div style="font-size:14px;color:#4b5563;margin-bottom:20px;">{info['desc']} Your reported symptoms and vitals match patients typically directed to this department.</div>
+    <div style="font-size:11px;font-weight:600;color:{info['color']};text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">What to do next?</div>
+    {steps_html}
+    <div style="margin-top:20px;padding:12px 16px;background:rgba(0,0,0,0.05);border-radius:10px;font-size:12px;color:#6b7280;line-height:1.5;">
+        ⚠️ This is an AI suggestion, not a medical diagnosis. Please consult a doctor for further evaluation.
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+    with prob_col:
+        sorted_depts = sorted(dept_map_inv.items(), key=lambda x: proba[x[0]], reverse=True)
+        bars_html = ""
+        for idx, dname in sorted_depts:
+            pct = proba[idx] * 100
+            dinfo = DEPT_INFO.get(dname, {'icon': '🏥', 'color': '#1a56db', 'border': '#bfdbfe'})
+            is_top = dname == dept_name
+            bar_fill = (
+                f"linear-gradient(90deg, {dinfo['color']}, {dinfo['border']})"
+                if is_top else "#d1d5db"
+            )
+            bars_html += f"""
+<div style="margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <span style="font-size:13px;font-weight:{'700' if is_top else '400'};
+                color:{'#111827' if is_top else '#6b7280'};">
+            {dinfo['icon']} {dname}
+        </span>
+        <span style="font-size:13px;font-weight:{'700' if is_top else '400'};
+                color:{dinfo['color'] if is_top else '#9ca3af'};">
+            {pct:.1f}%
+        </span>
+    </div>
+    <div style="background:#f3f4f6;border-radius:6px;height:8px;overflow:hidden;">
+        <div style="background:{bar_fill};width:{pct:.1f}%;height:100%;"></div>
+    </div>
+</div>
+"""
+        st.markdown(f"""
+<div style="background:white;border:1px solid #e5e7eb;border-radius:16px;padding:24px;">
+    <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:16px;">
+        Confidence by department
+    </div>
+    {bars_html}
 </div>
 """, unsafe_allow_html=True)
