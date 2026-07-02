@@ -257,6 +257,19 @@ if submitted:
     }])
 
     patient_scaled = patient.copy()
+
+    # Diagnostic: surface any mismatch between the model's expected feature
+    # names and the columns we built, instead of a cryptic KeyError.
+    missing = [f for f in features if f not in patient_scaled.columns]
+    if missing:
+        st.error(
+            "These feature names the model expects are not in the input:\n\n"
+            f"- Missing: {missing}\n\n"
+            f"- Columns built here: {list(patient_scaled.columns)}\n\n"
+            "Rename the DataFrame keys above to match the model's feature names."
+        )
+        st.stop()
+
     patient_scaled[cols_to_scale] = scaler.transform(patient[cols_to_scale])
 
     pred = model.predict(patient_scaled[features])[0]
@@ -311,7 +324,7 @@ if submitted:
             is_top = dname == dept_name
             bar_fill = (
                 f"linear-gradient(90deg, {dinfo['color']}, {dinfo['border']})"
-                if is_top else "#d1d5db"
+                if is_top else "#e5e7eb"
             )
             bars_html += f"""
 <div style="margin-bottom:14px;">
@@ -326,7 +339,7 @@ if submitted:
         </span>
     </div>
     <div style="background:#f3f4f6;border-radius:6px;height:8px;overflow:hidden;">
-        <div style="background:{bar_fill};width:{pct:.1f}%;height:100%;"></div>
+        <div style="background:{bar_fill};height:100%;border-radius:6px;width:{pct:.1f}%;transition:width 0.5s ease;"></div>
     </div>
 </div>
 """
